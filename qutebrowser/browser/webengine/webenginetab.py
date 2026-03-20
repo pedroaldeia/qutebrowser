@@ -150,6 +150,18 @@ class WebEngineSearch(browsertab.AbstractSearch):
         self._pending_searches = 0
         self.match = browsertab.SearchMatch()
         self._old_match = browsertab.SearchMatch()
+        self._remember_match_for_restore = False
+        self._restore_match_current = None
+
+    def remember_match_for_restore(self):
+        """Remember current match on the next clear()."""
+        self._remember_match_for_restore = True
+
+    def take_restore_match_current(self):
+        """Get and clear a stored pre-clear match index."""
+        current = self._restore_match_current
+        self._restore_match_current = None
+        return current
 
     def _store_flags(self, reverse, ignore_case):
         self._flags.case_sensitive = self._is_case_sensitive(ignore_case)
@@ -228,6 +240,12 @@ class WebEngineSearch(browsertab.AbstractSearch):
         self._find(text, self._flags, result_cb, 'search')
 
     def clear(self):
+        if self.search_displayed and self._remember_match_for_restore:
+            self._restore_match_current = self.match.current
+        else:
+            self._restore_match_current = None
+        self._remember_match_for_restore = False
+
         if self.search_displayed:
             self.cleared.emit()
             self.match_changed.emit(browsertab.SearchMatch())
@@ -304,6 +322,7 @@ class WebEngineCaret(browsertab.AbstractCaret):
         if self._tab.search.search_displayed:
             # We are currently in search mode.
             # convert the search to a blue selection so we can operate on it
+            self._tab.search.remember_match_for_restore()
             self._tab.search.clear()
 
         self._tab.run_js_async(
