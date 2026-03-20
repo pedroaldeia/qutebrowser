@@ -1670,16 +1670,14 @@ class CommandDispatcher:
             if hasattr(tab.search, 'take_restore_match_current'):
                 restore_match_current = tab.search.take_restore_match_current()
 
-            tab.search.search(window_text, **window_options)
+            if restore_match_current is not None:
+                tab.search.search(window_text, **window_options)
 
-            if restore_match_current and restore_match_current > 1:
-                # Restore search state
-                wrap = config.val.search.wrap
-                for _ in range(restore_match_current - 1):
-                    tab.search.next_result(wrap=wrap)
-            else:
-                # No caret restore position available
-                count -= 1
+                if restore_match_current > 1:
+                    # Restore search state
+                    wrap = config.val.search.wrap
+                    for _ in range(restore_match_current - 1):
+                        tab.search.next_result(wrap=wrap)
 
         if count == 0:
             return
